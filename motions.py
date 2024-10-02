@@ -22,6 +22,7 @@ from rclpy.time import Time
 
 
 CIRCLE=0; SPIRAL=1; ACC_LINE=2
+MAX_SPEED_GAIN = 1.5
 motion_types=['circle', 'spiral', 'line']
 
 class motion_executioner(Node):
@@ -38,6 +39,8 @@ class motion_executioner(Node):
         self.imu_initialized=False
         self.odom_initialized=False
         self.laser_initialized=False
+
+        self.speed_gain = 0
         
         # TODO Part 3: Create a publisher to send velocity commands by setting the proper parameters in (...)
         self.vel_publisher=self.create_publisher(Twist, 'cmd_vel', 10)
@@ -121,21 +124,24 @@ class motion_executioner(Node):
         
         msg=Twist()
         # fill up the twist msg for circular motion
-        msg.linear.y = 1.0;
-        msg.angular.z = 1.0;
+        msg.linear.y = 1.0
+        msg.angular.z = 1.0
         return msg
 
     def make_spiral_twist(self):
         msg=Twist()
         # fill up the twist msg for spiral motion
-        msg.linear.y = 0.5;
-        msg.angular.z = 1.0;
+        msg.linear.y = 1 * self.speed_gain
+        msg.angular.z = 1.0
+
+        if (self.speed_gain < MAX_SPEED_GAIN):
+            self.speed_gain += 0.1
         return msg
     
     def make_acc_line_twist(self):
         msg=Twist()
         # fill up the twist msg for line motion
-        msg.linear.y = 1.0;
+        msg.linear.y = 1.0
         return msg
 
 import argparse

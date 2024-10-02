@@ -89,5 +89,3 @@ def euler_from_quaternion(quat):
     yaw = atan2(sin_cosp, cos_cosp)
 
     return yaw  # returned in radians
-
-
