@@ -55,15 +55,16 @@ class motion_executioner(Node):
 
         # TODO Part 5: Create below the subscription to the topics corresponding to the respective sensors
         # IMU subscription
-        self.imu_sub = self.create_subscription(Imu, "imu", self.imu_callback, 10)
+        self.imu_sub = self.create_subscription(Imu, "imu", self.imu_callback, qos)
         
         # ENCODER subscription # TODO fix this
-        self.enc_sub = self.create_subscription(Odometry, "odom", self.odom_callback, 10)
+        self.enc_sub = self.create_subscription(Odometry, "odom", self.odom_callback, qos)
         
         # LaserScan subscription 
-        self.lidar_sub = self.create_subscription(LaserScan, "laser", self.laser_callback, 10)
+        self.lidar_sub = self.create_subscription(LaserScan, "laser", self.laser_callback, qos)
         
-        self.create_timer(0.1, self.timer_callback)
+        eval_time_interval = 0.1
+        self.create_timer(eval_time_interval, self.timer_callback)
 
 
     # TODO Part 5: Callback functions: complete the callback functions of the three sensors to log the proper data.
