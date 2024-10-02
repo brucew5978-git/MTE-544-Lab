@@ -78,10 +78,16 @@ class motion_executioner(Node):
         self.odom_logger.log_values(val_list)
                 
     def laser_callback(self, laser_msg: LaserScan):
+        # log laser msgs with position msg at that time
         val_list = []
+        for range in laser_msg.ranges:
+            if  range > laser_msg.range_min or range < laser_msg.range_max : 
+                val_list.append(range)
+
+        val_list.append(laser_msg.angle_increment)
+        val_list.append(Time.from_msg(laser_msg.header.stamp).nanoseconds)
         self.laser_logger.log_values(val_list)
         
-        ... # log laser msgs with position msg at that time
                 
     def timer_callback(self):
         
@@ -114,17 +120,22 @@ class motion_executioner(Node):
     def make_circular_twist(self):
         
         msg=Twist()
-        ... # fill up the twist msg for circular motion
+        # fill up the twist msg for circular motion
+        msg.linear.y = 1.0;
+        msg.angular.z = 1.0;
         return msg
 
     def make_spiral_twist(self):
         msg=Twist()
-        ... # fill up the twist msg for spiral motion
+        # fill up the twist msg for spiral motion
+        msg.linear.y = 0.5;
+        msg.angular.z = 1.0;
         return msg
     
     def make_acc_line_twist(self):
         msg=Twist()
-        ... # fill up the twist msg for line motion
+        # fill up the twist msg for line motion
+        msg.linear.y = 1.0;
         return msg
 
 import argparse

@@ -24,7 +24,9 @@ class Logger:
             vals_str=""
 
             # TODO Part 5: Write the values from the list to the file
-            ...
+            for val in values_list:
+                vals_str+=val
+                vals_str+=", "
             
             vals_str+="\n"
             
