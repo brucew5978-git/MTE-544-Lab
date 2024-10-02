@@ -83,22 +83,10 @@ class FileReader:
 
 # TODO Part 5: Implement the conversion from Quaternion to Euler Angles
 def euler_from_quaternion(quat):
-    # Roll (x-axis rotation)
-    sinr_cosp = 2 * (quat.w * quat.x + quat.y * quat.z)
-    cosr_cosp = 1 - 2 * (quat.x * quat.x + quat.y * quat.y)
-    roll = math.atan2(sinr_cosp, cosr_cosp)
-
-    # Pitch (y-axis rotation)
-    sinp = 2 * (w * y - z * x)
-    if abs(sinp) >= 1:
-        pitch = math.copysign(math.pi / 2, sinp) # use 90 degrees if out of range
-    else:
-        pitch = math.asin(sinp)
-
     # Yaw (z-axis rotation)
-    siny_cosp = 2 * (quat.w * quat.z + quat.x * quat.y)
-    cosy_cosp = 1 - 2 * (quat.y * quat.y + quat.z * quat.z)
-    yaw = math.atan2(siny_cosp, cosy_cosp)
+    sin_cosp = 2 * (quat.w * quat.z + quat.x * quat.y)
+    cos_cosp = 1 - 2 * (quat.y * quat.y + quat.z * quat.z)
+    yaw = atan2(sin_cosp, cos_cosp)
 
     return yaw  # returned in radians
 
