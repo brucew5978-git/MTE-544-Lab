@@ -10,10 +10,10 @@ from rclpy.qos import QoSProfile
     # For sending velocity commands to the robot: Twist
     # For the sensors: Imu, LaserScan, and Odometry
 # Check the online documentation to fill in the lines below
-from ... import Twist
+from goemetry_msgs.msg import Twist
 from sensor_msgs.msg import Imu
-from ... import LaserScan
-from ... import Odometry
+from sensor_msgs.msg import LaserScan
+from nav_msgs.msgs import Odometry
 
 from rclpy.time import Time
 
@@ -40,7 +40,7 @@ class motion_executioner(Node):
         self.laser_initialized=False
         
         # TODO Part 3: Create a publisher to send velocity commands by setting the proper parameters in (...)
-        self.vel_publisher=self.create_publisher(...)
+        self.vel_publisher=self.create_publisher(Twist, 'cmd_vel', 10)
                 
         # loggers
         self.imu_logger=Logger('imu_content_'+str(motion_types[motion_type])+'.csv', headers=["acc_x", "acc_y", "angular_z", "stamp"])
@@ -52,16 +52,13 @@ class motion_executioner(Node):
 
         # TODO Part 5: Create below the subscription to the topics corresponding to the respective sensors
         # IMU subscription
+        self.imu_sub = self.create_subscription(Imu, "imu", self.imu_callback, 10)
         
-        ...
-        
-        # ENCODER subscription
-
-        ...
+        # ENCODER subscription # TODO fix this
+        self.enc_sub = self.create_subscription(Odometry, "odom", self.odom_callback, 10)
         
         # LaserScan subscription 
-        
-        ...
+        self.lidar_sub = self.create_subscription(LaserScan, "laser", self.laser_callback, 10)
         
         self.create_timer(0.1, self.timer_callback)
 
@@ -73,13 +70,16 @@ class motion_executioner(Node):
     # You can save the needed fields into a list, and pass the list to the log_values function in utilities.py
 
     def imu_callback(self, imu_msg: Imu):
-        ...    # log imu msgs
+        val_list = [imu_msg.linear_acceleration.x, imu_msg.linear_acceleration.y, imu_msg.angular_velocity.z, Time.from_msg(imu_msg.header.stamp).nanoseconds]
+        self.imu_logger.log_values(val_list)
         
     def odom_callback(self, odom_msg: Odometry):
-        
-        ... # log odom msgs
+        val_list = [odom_msg.twist.twist.linear.x, odom_msg.twist.twist.linear.y, odom_msg.twist.twist.angular.z, Time.from_msg(odom_msg.header.stamp).nanoseconds]
+        self.odom_logger.log_values(val_list)
                 
     def laser_callback(self, laser_msg: LaserScan):
+        val_list = []
+        self.laser_logger.log_values(val_list)
         
         ... # log laser msgs with position msg at that time
                 
