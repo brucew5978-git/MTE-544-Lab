@@ -10,10 +10,10 @@ from rclpy.qos import QoSProfile
     # For sending velocity commands to the robot: Twist
     # For the sensors: Imu, LaserScan, and Odometry
 # Check the online documentation to fill in the lines below
-from goemetry_msgs.msg import Twist
+from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Imu
 from sensor_msgs.msg import LaserScan
-from nav_msgs.msgs import Odometry
+from nav_msgs.msg import Odometry
 
 from rclpy.time import Time
 
@@ -21,7 +21,7 @@ from rclpy.time import Time
 # import ...
 
 
-CIRCLE=0; SPIRAL=1; ACC_LINE=2
+CIRCLE=0; SPIRAL=1; ACC_LINE=2; STOP=3
 MAX_SPEED_GAIN = 1.5
 motion_types=['circle', 'spiral', 'line']
 
@@ -55,16 +55,22 @@ class motion_executioner(Node):
 
         # TODO Part 5: Create below the subscription to the topics corresponding to the respective sensors
         # IMU subscription
-        self.imu_sub = self.create_subscription(Imu, "imu", self.imu_callback, qos)
+        self.imu_sub = self.create_subscription(Imu, "imu", self.imu_callback, qos_profile=qos)
+       
+
         
         # ENCODER subscription # TODO fix this
-        self.enc_sub = self.create_subscription(Odometry, "odom", self.odom_callback, qos)
+        self.enc_sub = self.create_subscription(Odometry, "odom", self.odom_callback, qos_profile=qos)
+        self.odom_initialized=True
+
         
         # LaserScan subscription 
-        self.lidar_sub = self.create_subscription(LaserScan, "laser", self.laser_callback, qos)
+        self.lidar_sub = self.create_subscription(LaserScan, "scan", self.laser_callback, qos_profile=qos)
+        self.laser_initialized=True
         
-        eval_time_interval = 0.1
-        self.create_timer(eval_time_interval, self.timer_callback)
+        self.create_timer(0.1, self.timer_callback)
+        self.successful_init=True
+        print("inited")
 
 
     # TODO Part 5: Callback functions: complete the callback functions of the three sensors to log the proper data.
@@ -85,17 +91,20 @@ class motion_executioner(Node):
         # log laser msgs with position msg at that time
         val_list = []
         for range in laser_msg.ranges:
-            if  range > laser_msg.range_min or range < laser_msg.range_max : 
+            if  range > laser_msg.range_min and range < laser_msg.range_max : 
                 val_list.append(range)
 
         val_list.append(laser_msg.angle_increment)
         val_list.append(Time.from_msg(laser_msg.header.stamp).nanoseconds)
         self.laser_logger.log_values(val_list)
+    
+   
         
                 
     def timer_callback(self):
-        
+        print("timer callback")
         if self.odom_initialized and self.laser_initialized and self.imu_initialized:
+            print("test")
             self.successful_init=True
             
         if not self.successful_init:
@@ -111,11 +120,15 @@ class motion_executioner(Node):
                         
         elif self.type==ACC_LINE:
             cmd_vel_msg=self.make_acc_line_twist()
+
+        elif self.type==STOP:
+            cmd_vel_msg=self.stop_robot()
             
         else:
             print("type not set successfully, 0: CIRCLE 1: SPIRAL and 2: ACCELERATED LINE")
             raise SystemExit 
 
+        print("publishing")
         self.vel_publisher.publish(cmd_vel_msg)
         
     
@@ -125,25 +138,34 @@ class motion_executioner(Node):
         
         msg=Twist()
         # fill up the twist msg for circular motion
-        msg.linear.y = 1.0
-        msg.angular.z = 1.0
+        msg.linear.x = 0.1
+        msg.angular.z = 0.3
         return msg
 
     def make_spiral_twist(self):
         msg=Twist()
         # fill up the twist msg for spiral motion
-        msg.linear.y = 1 * self.speed_gain
-        msg.angular.z = 1.0
+        msg.linear.x = 0.2
+        msg.angular.z = 1.5 - self.speed_gain
 
         if (self.speed_gain < MAX_SPEED_GAIN):
-            self.speed_gain += 0.1
+            self.speed_gain += 0.005
         return msg
     
     def make_acc_line_twist(self):
         msg=Twist()
         # fill up the twist msg for line motion
-        msg.linear.y = 1.0
+        msg.linear.x = 0.2
+        msg.angular.z = 0.0
         return msg
+ 
+    def stop_robot(self): 
+        msg=Twist()
+        # fill up the twist msg for line motion
+        msg.linear.x = 0.0
+        msg.angular.z = 0.0
+        return msg
+        
 
 import argparse
 
@@ -155,8 +177,7 @@ if __name__=="__main__":
 
     argParser.add_argument("--motion", type=str, default="circle")
 
-
-
+    print("before init")
     rclpy.init()
 
     args = argParser.parse_args()
@@ -169,13 +190,14 @@ if __name__=="__main__":
 
     elif args.motion.lower() =="spiral":
         ME=motion_executioner(motion_type=SPIRAL)
-
     else:
-        print(f"we don't have {arg.motion.lower()} motion type")
+        ME=motion_executioner(motion_type=STOP)
+        print(f"we don't have {args.motion.lower()} motion type")
 
 
     
     try:
+        print("spinning")
         rclpy.spin(ME)
     except KeyboardInterrupt:
         print("Exiting")
