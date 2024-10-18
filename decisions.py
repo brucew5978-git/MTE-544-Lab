@@ -56,15 +56,18 @@ class decision_maker(Node):
         # NOTE: goalPoint is used only for the pointPlanner
         self.goal=self.planner.plan(goalPoint)
 
-        self.create_timer(publishing_period, self.timerCallback)
+        self.callback_timer = self.create_timer(publishing_period, self.timerCallback)
 
 
     def timerCallback(self):
         
         # TODO Part 3: Run the localization node
-        ...    # Remember that this file is already running the decision_maker node.
+        # Remember that this file is already running the decision_maker node.
+        spin_once(self.localizer)
 
-        if self.localizer.getPose()  is  None:
+        pose = self.localizer.getPose()
+
+        if pose is  None:
             print("waiting for odom msgs ....")
             return
 
@@ -72,9 +75,10 @@ class decision_maker(Node):
         
         # TODO Part 3: Check if you reached the goal
         if type(self.goal) == list:
-            reached_goal=...
+            reached_goal = (self.goal[0] == pose[0]) and (self.goal[1] == pose[1]) and (self.goal[2] == pose[2])
         else: 
-            reached_goal=...
+            # this should be a failure state i think
+            reached_goal = False
         
 
         if reached_goal:
@@ -85,7 +89,9 @@ class decision_maker(Node):
             self.controller.PID_linear.logger.save_log()
             
             #TODO Part 3: exit the spin
-            ... 
+            # cancel the timer because our jobs done
+            self.callback_timer.cancel()
+             
         
         velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
 
