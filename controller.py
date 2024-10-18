@@ -1,3 +1,4 @@
+from _typeshed import MaybeNone
 import numpy as np
 
 
@@ -7,6 +8,14 @@ from utilities import euler_from_quaternion, calculate_angular_error, calculate_
 M_PI=3.1415926535
 
 P=0; PD=1; PI=2; PID=3
+
+SIM_MAX_LIN = 0.22
+SIM_MAX_ANG = 2.87
+REAL_MAX_LIN = 0.31
+REAL_MAX_ANG = 1.9
+
+MAX_LIN = SIM_MAX_LIN
+MAX_ANG = SIM_MAX_ANG
 
 class controller:
     
@@ -27,11 +36,19 @@ class controller:
 
         linear_vel=self.PID_linear.update([e_lin, pose[3]], status)
         angular_vel=self.PID_angular.update([e_ang, pose[3]], status)
+        if linear_vel is None or angular_vel is None:
+            print("lin or angular is none")
+            return 0,0
         
         # TODO Part 4: Add saturation limits for the robot linear and angular velocity
-
-        linear_vel = ... if linear_vel > 1.0 else linear_vel
-        angular_vel= ... if angular_vel > 1.0 else angular_vel
+        if linear_vel > MAX_LIN:
+            linear_vel = MAX_LIN 
+        if angular_vel > 0:
+            if angular_vel > MAX_ANG:
+                angular_vel = MAX_ANG
+        else:
+            if angular_vel < -MAX_ANG:
+                angular_vel = -MAX_ANG
         
         return linear_vel, angular_vel
     

@@ -29,7 +29,7 @@ class decision_maker(Node):
         super().__init__("decision_maker")
 
         #TODO Part 4: Create a publisher for the topic responsible for robot's motion
-        self.publisher=... 
+        self.publisher=self.create_publisher(publisher_msg, publishing_topic, qos_publisher)
 
         publishing_period=1/rate
         
@@ -67,7 +67,7 @@ class decision_maker(Node):
 
         pose = self.localizer.getPose()
 
-        if pose is  None:
+        if pose is None:
             print("waiting for odom msgs ....")
             return
 
@@ -75,9 +75,8 @@ class decision_maker(Node):
         
         # TODO Part 3: Check if you reached the goal
         if type(self.goal) == list:
-            reached_goal = (self.goal[0] == pose[0]) and (self.goal[1] == pose[1]) and (self.goal[2] == pose[2])
+            reached_goal = (self.goal[0] == pose[0]) and (self.goal[1] == pose[1])
         else: 
-            # this should be a failure state i think
             reached_goal = False
         
 
@@ -96,7 +95,10 @@ class decision_maker(Node):
         velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
 
         #TODO Part 4: Publish the velocity to move the robot
-        ... 
+        commanded_velocities = Twist()
+        commanded_velocities.linear.x = velocity
+        commanded_velocities.angular.z = yaw_rate
+        self.publisher.publish(commanded_velocities)
 
 import argparse
 
@@ -104,6 +106,10 @@ import argparse
 def main(args=None):
     
     init()
+
+    if args is None: 
+        print("invalid args", file=sys.stderr)        
+        return 
 
     # TODO Part 3: You migh need to change the QoS profile based on whether you're using the real robot or in simulation.
     # Remember to define your QoS profile based on the information available in "ros2 topic info /odom --verbose" as explained in Tutorial 3
@@ -113,11 +119,12 @@ def main(args=None):
 
     # TODO Part 4: instantiate the decision_maker with the proper parameters for moving the robot
     if args.motion.lower() == "point":
-        DM=decision_maker(...)
+        DM=decision_maker(Twist, "cmd_vel", odom_qos, goalPoint=[1.0, 1.0])
     elif args.motion.lower() == "trajectory":
-        DM=decision_maker(...)
+        DM=decision_maker(Twist, "cmd_vel", odom_qos, goalPoint=[1.0, 1.0])
     else:
         print("invalid motion type", file=sys.stderr)        
+        return 
     
     
     
