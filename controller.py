@@ -40,7 +40,7 @@ class controller:
             print("lin or angular is none")
             return 0,0
         
-        # TODO Part 4: Add saturation limits for the robot linear and angular velocity
+        # Part 4: Add saturation limits for the robot linear and angular velocity
         if linear_vel > MAX_LIN:
             linear_vel = MAX_LIN 
         if angular_vel > 0:
@@ -59,6 +59,7 @@ class trajectoryController(controller):
         
         super().__init__(klp, klv, kli, kap, kav, kai)
     
+    # This is technically invalid ? 
     def vel_request(self, pose, listGoals, status):
         
         goal=self.lookFarFor(pose, listGoals)
@@ -68,14 +69,25 @@ class trajectoryController(controller):
         e_lin=calculate_linear_error(pose, finalGoal)
         e_ang=calculate_angular_error(pose, goal)
 
+
         
         linear_vel=self.PID_linear.update([e_lin, pose[3]], status)
         angular_vel=self.PID_angular.update([e_ang, pose[3]], status) 
 
-        # TODO Part 5: Add saturation limits for the robot linear and angular velocity
+        if linear_vel is None or angular_vel is None:
+            print("lin or angular is none")
+            return 0,0
 
-        linear_vel = ... if linear_vel > ... else linear_vel
-        angular_vel= ... if angular_vel > ... else angular_vel
+        # Part 5: Add saturation limits for the robot linear and angular velocity
+
+        if linear_vel > MAX_LIN:
+            linear_vel = MAX_LIN 
+        if angular_vel > 0:
+            if angular_vel > MAX_ANG:
+                angular_vel = MAX_ANG
+        else:
+            if angular_vel < -MAX_ANG:
+                angular_vel = -MAX_ANG
         
         return linear_vel, angular_vel
 

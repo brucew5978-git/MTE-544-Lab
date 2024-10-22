@@ -83,7 +83,7 @@ class FileReader:
     
     
 
-# TODO Part 3: Implement the conversion from Quaternion to Euler Angles
+# Part 3: Implement the conversion from Quaternion to Euler Angles
 def euler_from_quaternion(quat):
     """
     Convert quaternion (w in last place) to euler roll, pitch, yaw.
@@ -98,7 +98,7 @@ def euler_from_quaternion(quat):
     return yaw
 
 
-#TODO Part 4: Implement the calculation of the linear error
+# Part 4: Implement the calculation of the linear error
 def calculate_linear_error(current_pose, goal_pose):
         
     # Compute the linear error in x and y
@@ -108,7 +108,7 @@ def calculate_linear_error(current_pose, goal_pose):
     error_linear= sqrt((current_pose[0] - goal_pose[0])**2 + (current_pose[1] - goal_pose[1])**2)
     return error_linear
 
-#TODO Part 4: Implement the calculation of the angular error
+# Part 4: Implement the calculation of the angular error
 def calculate_angular_error(current_pose, goal_pose):
 
     # Compute the linear error in x and y
