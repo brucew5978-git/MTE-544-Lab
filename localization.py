@@ -28,7 +28,7 @@ class localization(Node):
         
         if localizationType == rawSensor:
         # TODO Part 3: subscribe to the position sensor topic (Odometry)
-            self.imu_sub = self.create_subscription(odom, "imu", self.imu_callback, qos_profile=odom_qos)
+            self.imu_sub = self.create_subscription(odom, "odom", self.odom_callback, qos_profile=odom_qos)
         else:
             print("This type doesn't exist", sys.stderr)
     

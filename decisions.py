@@ -66,7 +66,7 @@ class decision_maker(Node):
         
         # TODO Part 3: Run the localization node
         # Remember that this file is already running the decision_maker node.
-        spin_once({localization})
+        spin_once(self.localizer)
 
         if self.localizer.getPose()  is  None:
             print("waiting for odom msgs ....")
