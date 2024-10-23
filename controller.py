@@ -8,6 +8,10 @@ M_PI=3.1415926535
 
 P=0; PD=1; PI=2; PID=3
 
+
+LINEAR_SATURATION = 0.31
+ANGULAR_SATURATION = 1.9
+
 class controller:
     
     
@@ -30,8 +34,8 @@ class controller:
         
         # TODO Part 4: Add saturation limits for the robot linear and angular velocity
 
-        linear_vel = ... if linear_vel > 1.0 else linear_vel
-        angular_vel= ... if angular_vel > 1.0 else angular_vel
+        linear_vel = LINEAR_SATURATION if linear_vel > 1.0 else linear_vel
+        angular_vel= ANGULAR_SATURATION if angular_vel > 1.0 else angular_vel
         
         return linear_vel, angular_vel
     

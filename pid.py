@@ -81,7 +81,7 @@ class PID_ctrl:
         error_int=sum_*dt_avg
         
         # TODO Part 4: Log your errors
-        self.logger.log_values( ... )
+        self.logger.log_values(latest_error, dt_avg, error_dot )
         
         # TODO Part 4: Implement the control law of P-controller
         if self.type == P:
