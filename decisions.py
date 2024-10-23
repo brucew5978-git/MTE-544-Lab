@@ -15,7 +15,7 @@ from nav_msgs.msg import Odometry as odom
 
 from localization import localization, rawSensor
 
-from planner import TRAJECTORY_PLANNER, POINT_PLANNER, planner
+from planner import TRAJECTORY_PLANNER, POINT_PLANNER, PARABOLA, SIGMOID, planner
 from controller import controller, trajectoryController
 
 # You may add any other imports you may need/want to use below
@@ -43,7 +43,7 @@ class decision_maker(Node):
     
         elif motion_type==TRAJECTORY_PLANNER:
             self.controller=trajectoryController(klp=0.2, klv=0.5, kap=0.8, kav=0.6)
-            self.planner=planner(TRAJECTORY_PLANNER)
+            self.planner=planner(TRAJECTORY_PLANNER, PARABOLA) # Can change to sigmoid later
 
         else:
             print("Error! you don't have this planner", file=sys.stderr)
