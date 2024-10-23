@@ -19,7 +19,7 @@ class localization(Node):
         # Part 3: Define the QoS profile variable based on whether you are using the simulation (Turtlebot 3 Burger) or the real robot (Turtlebot 4)
         # Remember to define your QoS profile based on the information available in "ros2 topic info /odom --verbose" as explained in Tutorial 3
 
-        odom_qos = QoSProfile(reliability=2, durability=2, history=1, depth=10)
+        qos = QoSProfile(reliability=2, durability=2, history=1, depth=10)
         
         self.loc_logger=Logger("robot_pose.csv", ["x", "y", "theta", "stamp"])
         self.pose=None
