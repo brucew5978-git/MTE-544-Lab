@@ -9,6 +9,7 @@ from geometry_msgs.msg import Twist
 
 from rclpy.qos import QoSProfile
 from nav_msgs.msg import Odometry as odom
+import time
 
 from localization import localization, rawSensor
 
@@ -72,14 +73,14 @@ class decision_maker(Node):
         vel_msg=Twist()
         
         # Part 3: Check if you reached the goal
-        if type(self.goal) == list:
-            reached_goal = (self.goal[0] == pose[0]) and (self.goal[1] == pose[1])
+        if type(self.goal) == tuple:
+            reached_goal = (calculate_linear_error(pose, self.goal) < 0.01)
         else: 
             reached_goal = False
         
 
         if reached_goal:
-            print("reached goal")
+            print("Reached goal")
             self.publisher.publish(vel_msg)
             
             self.controller.PID_angular.logger.save_log()
@@ -94,12 +95,12 @@ class decision_maker(Node):
 
         # Part 4: Publish the velocity to move the robot
         # Print velocity and yaw rate
-        commanded_velocities = Twist()
-        commanded_velocities.linear.x = velocity
-        commanded_velocities.angular.z = yaw_rate
-        print("Linear Velocity: {}, Angular Velocity: {}".format(commanded_velocities.linear.x, commanded_velocities.angular.z))
+        # commanded_velocities = Twist()
+        vel_msg.linear.x = velocity
+        vel_msg.angular.z = yaw_rate
+        print("Linear Velocity: {}, Angular Velocity: {}".format(vel_msg.linear.x, vel_msg.angular.z))
         print("Pose: {}".format(self.localizer.getPose()))
-        self.publisher.publish(commanded_velocities)
+        self.publisher.publish(vel_msg)
 
 import argparse
 
@@ -123,9 +124,9 @@ def main(args=None):
     )
     # Part 4: instantiate the decision_maker with the proper parameters for moving the robot
     if args.motion.lower() == "point":
-        DM=decision_maker(Twist, "cmd_vel", odom_qos, goalPoint=[10.0, 10.0])
+        DM=decision_maker(Twist, "cmd_vel", odom_qos, goalPoint=[5.0, 5.0])
     elif args.motion.lower() == "trajectory":
-        DM=decision_maker(Twist, "cmd_vel", odom_qos, goalPoint=[10.0, 10.0])
+        DM=decision_maker(Twist, "cmd_vel", odom_qos, goalPoint=[5.0, 5.0])
     else:
         print("invalid motion type", file=sys.stderr)        
         return 
