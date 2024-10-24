@@ -42,8 +42,9 @@ class decision_maker(Node):
     
     
         elif motion_type==TRAJECTORY_PLANNER:
+            print("TR AJ EC TORY")
             self.controller=trajectoryController(klp=0.2, klv=0.5, kap=0.8, kav=0.6)
-            self.planner=planner(TRAJECTORY_PLANNER, PARABOLA) # Can change to sigmoid later
+            self.planner=planner(TRAJECTORY_PLANNER, SIGMOID) # Can change to sigmoid later
 
         else:
             print("Error! you don't have this planner", file=sys.stderr)
@@ -55,6 +56,7 @@ class decision_maker(Node):
         # Instantiate the planner
         # NOTE: goalPoint is used only for the pointPlanner
         self.goal=self.planner.plan(goalPoint)
+        
 
         self.callback_timer = self.create_timer(publishing_period, self.timerCallback)
 
@@ -71,27 +73,38 @@ class decision_maker(Node):
             return
 
         vel_msg=Twist()
-        
+
         # Part 3: Check if you reached the goal
         if type(self.goal) == tuple:
             reached_goal = (calculate_linear_error(pose, self.goal) < 0.01)
+            if reached_goal:
+                print("Reached goal")
+                self.publisher.publish(vel_msg)
+            
+                self.controller.PID_angular.logger.save_log()
+                self.controller.PID_linear.logger.save_log()
+            
+                # Part 3: exit the spin
+                # cancel the timer because our jobs done
+                self.callback_timer.cancel()
         else: 
-            reached_goal = False
+            reached_goal = (calculate_linear_error(pose, self.goal[-1]) < 0.01)
+            print("Self Goal -1: {}".format(self.goal[-1]))
+            if reached_goal:
+                print("traj finished")
+                self.publisher.publish(vel_msg)
         
-
-        if reached_goal:
-            print("Reached goal")
-            self.publisher.publish(vel_msg)
-            
-            self.controller.PID_angular.logger.save_log()
-            self.controller.PID_linear.logger.save_log()
-            
-            # Part 3: exit the spin
-            # cancel the timer because our jobs done
-            self.callback_timer.cancel()
-             
+                self.controller.PID_angular.logger.save_log()
+                self.controller.PID_linear.logger.save_log()
+        
+                # Part 3: exit the spin
+                # cancel the timer because our jobs done
+                self.callback_timer.cancel()
         
         velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
+
+        
+
 
         # Part 4: Publish the velocity to move the robot
         # Print velocity and yaw rate
@@ -126,7 +139,7 @@ def main(args=None):
     if args.motion.lower() == "point":
         DM=decision_maker(Twist, "cmd_vel", odom_qos, goalPoint=[5.0, 5.0])
     elif args.motion.lower() == "trajectory":
-        DM=decision_maker(Twist, "cmd_vel", odom_qos, goalPoint=[5.0, 5.0])
+        DM=decision_maker(Twist, "cmd_vel", odom_qos, goalPoint=None, motion_type=TRAJECTORY_PLANNER)
     else:
         print("invalid motion type", file=sys.stderr)        
         return 

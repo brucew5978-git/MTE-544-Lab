@@ -106,7 +106,7 @@ def calculate_linear_error(current_pose, goal_pose):
     # Remember to use the Euclidean distance to calculate the error.
     # C = √(A^2 + B^2)
     error_linear= sqrt((current_pose[0] - goal_pose[0])**2 + (current_pose[1] - goal_pose[1])**2)
-    print("Linear Error: {}".format(error_linear))
+    # print("Linear Error: {}".format(error_linear))
     return error_linear
 
 # Part 4: Implement the calculation of the angular error

@@ -30,13 +30,14 @@ class planner:
     # TODO Part 6: Implement the trajectories here
     def trajectory_planner(self):
 
-        if self.type == PARABOLA:
+        if self.trajectory_type_ == PARABOLA:
             
             x_values = np.linspace(0, 1.5, 50)
             # Calculate y values
             y_values = x_values**2
+            print("I AM A PARABOLA")
         
-        elif self.type == SIGMOID:
+        elif self.trajectory_type_ == SIGMOID:
             x_values = np.linspace(0, 2.5, 50)
             y_values = 2 / (1 + np.exp(-2 * x_values)) - 1
 
