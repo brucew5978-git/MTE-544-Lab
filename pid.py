@@ -74,7 +74,7 @@ class PID_ctrl:
         
         # Compute the error integral
         sum_=0
-        for i in self.history:
+        for i in range(len(self.history)):
             # Part 5: Gather the integration
             sum_ += self.history[i][0]
         

@@ -1,6 +1,3 @@
-# Imports
-
-
 import sys
 
 from utilities import euler_from_quaternion, calculate_angular_error, calculate_linear_error
@@ -17,6 +14,8 @@ from localization import localization, rawSensor
 
 from planner import TRAJECTORY_PLANNER, POINT_PLANNER, PARABOLA, SIGMOID, planner
 from controller import controller, trajectoryController
+
+from rclpy.qos import QoSProfile, ReliabilityPolicy
 
 # You may add any other imports you may need/want to use below
 # import ...
@@ -38,7 +37,7 @@ class decision_maker(Node):
     
         if motion_type == POINT_PLANNER:
             self.controller=controller(klp=0.2, klv=0.5, kap=0.8, kav=0.6)
-            self.planner=planner(POINT_PLANNER)    
+            self.planner=planner(POINT_PLANNER, None)    
     
     
         elif motion_type==TRAJECTORY_PLANNER:
@@ -59,8 +58,7 @@ class decision_maker(Node):
         self.callback_timer = self.create_timer(publishing_period, self.timerCallback)
 
 
-    def timerCallback(self):
-        
+    def timerCallback(self):        
         # Part 3: Run the localization node
         # Remember that this file is already running the decision_maker node.
         spin_once(self.localizer)
@@ -95,9 +93,12 @@ class decision_maker(Node):
         velocity, yaw_rate = self.controller.vel_request(self.localizer.getPose(), self.goal, True)
 
         # Part 4: Publish the velocity to move the robot
+        # Print velocity and yaw rate
         commanded_velocities = Twist()
         commanded_velocities.linear.x = velocity
         commanded_velocities.angular.z = yaw_rate
+        print("Linear Velocity: {}, Angular Velocity: {}".format(commanded_velocities.linear.x, commanded_velocities.angular.z))
+        print("Pose: {}".format(self.localizer.getPose()))
         self.publisher.publish(commanded_velocities)
 
 import argparse
@@ -114,14 +115,17 @@ def main(args=None):
     # Part 3: You migh need to change the QoS profile based on whether you're using the real robot or in simulation.
     # Remember to define your QoS profile based on the information available in "ros2 topic info /odom --verbose" as explained in Tutorial 3
     
-    odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)
+    # odom_qos=QoSProfile(reliability=2, durability=2, history=1, depth=10)
     
-
+    odom_qos = QoSProfile(
+        reliability=ReliabilityPolicy.RELIABLE,  # Ensures all messages are delivered
+        depth=10  # Sets the queue size for outgoing messages
+    )
     # Part 4: instantiate the decision_maker with the proper parameters for moving the robot
     if args.motion.lower() == "point":
-        DM=decision_maker(Twist, "cmd_vel", odom_qos, goalPoint=[1.0, 1.0])
+        DM=decision_maker(Twist, "cmd_vel", odom_qos, goalPoint=[10.0, 10.0])
     elif args.motion.lower() == "trajectory":
-        DM=decision_maker(Twist, "cmd_vel", odom_qos, goalPoint=[1.0, 1.0])
+        DM=decision_maker(Twist, "cmd_vel", odom_qos, goalPoint=[10.0, 10.0])
     else:
         print("invalid motion type", file=sys.stderr)        
         return 

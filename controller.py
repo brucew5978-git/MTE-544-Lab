@@ -1,4 +1,3 @@
-from _typeshed import MaybeNone
 import numpy as np
 
 
