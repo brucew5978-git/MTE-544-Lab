@@ -1,35 +1,41 @@
-# LAB 1 - Sensor data processing for mobile robots
+# LAB 3 - Localization
 
 ## Introduction
 
-Welcome to LAB 1 of the mobile robotics course! In this lab, participants will gain hands-on experience with mobile robots and acquire knowledge about their basic functionalities. By the end of this lab, 
-### Participants will be able to:
-- Interact with sensors.
-- Understand the pipeline of ros2 or any middleware.
-- Read and Process robot's data; sensors and actuators.
+Welcome to LAB 3 of the mobile robotics course! 
+In this lab, participants will gain experience with utilizing sensor data to perform localization via state estimation.
+
+In this lab, you will implement the Extended Kalman Filter (EKF). 
+
+By the end of this lab, participants will be able to:
+- Use an Extended Kalman Filter to localize in real-time a mobile robot using sensor data.
+
+*Part 1* and *Part 2* are the same as in the previous labs they are here just for your convenience.
 
 
-### Participants will learn:
+#### The summary of what you should learn is as following:
+- You will learn how to derive the needed functions and matrices and perform localization using an EKF by using IMU and wheel encoders (as odom).
 
-1. How to connect to your mobile robot and make it move around. 
-2. How to properly read and log sensors through ros interfaces and OOP programming. 
+**NOTE** this Lab builds on top of Lab 2. A complete solution to Lab 2 is provided within this lab so that even if you did not conclude Lab 2's implementation, you can still work on Lab 3. You are welcome to replace some of the code with your own development from Lab 2.
+
+Check ```rubrics.md``` for the grading scheme of this lab.
 
 ### NOTES for pre-lab activities
 Given the limited time in the lab, it is highly recommended to go through this manual and start (or complete) your implementation before the lab date, by working on your personal setup (VMWare, remote desktop, lent laptop), and using simulation for testing when needed to verify that your codes are working before coming into the lab. For simulation, refer to `tbt3Simulation.md` in the `main` branch.
 
 During the 3 hours in the lab, you want to utilize this time to test your code, work with the actual robot, get feedback from the TAs, and acquire the in-lab marks (check `rubrics.md` in the same branch).
 
-While in-lab, you are required to use the Desktop PCs and **NOT** your personal setup (VMWare, remote desktop, lent laptop). So, make sure that you have your modified files, either online or on a USB, with you to try it out in-lab.
+While in-lab, you are required to use the Desktop PCs and **NOT** your personal setup (VMWare, remote desktop, lent laptop). So, make sure that you have your modified files, either online or on a USB, with you to try it out in-lab. 
 
 ### Pre-lab deliverable
 A first version of the completed code is to be submitted **24 hours before the group's lab section** (e.g. groups on the Wednesday section must submit by Tuesday at 3 PM), along with a list of doubts/questions to be solved during the in-person lab section (optional, if needed). The in-person lab is not meant for implementation but for testing and getting help from the TAs. 
 
 Failure to submit will result in a penalty of 5 marks on the lab report. The code does not have to be fully correct, but it should be (at least almost) complete and meaningful with appropriate comments.
 
-## Part 1 - Connect to the robot (5 marks)
-Open the [connectToUWtb4s.md](https://github.com/UW-MTE544/MTE544_student/blob/main/connectToUWtb4s.md) markdown file in the main branch, and follow along. Read and follow each step carefully. Wait for TA approval before going to next step.
+## Part 1 - connecting to the robot (no marks)
+Open the [connectToUWtb4s.md](https://github.com/aalghooneh/MTE544_student/blob/main/connectToUWtb4s.md) markdown file in the main branch, and follow along. Read and follow each step carefully.
 
-## Part 2 - Play with the robot (5 marks)
+## Part 2 - Robot teleop (no marks)
 
 In this part, you will learn to play with the robot; you will get to undock it from the charger and then move it around by keyboard.  
 When you want to dock it again, It should be able to find it only when it is in less than ~0.5 meter around it. Note, that it doesn't
@@ -52,134 +58,101 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 See the prompt for help on the keys. 
 
 To dock the robot, use:
+
 ```
 ros2 action send_goal /dock irobot_create_msgs/action/Dock {}
 ```
 
-### Lead the robot to your seat and let a TA know to get your checkmark for grading!
+## NOTE: when you open a new terminal, you need to source again and set the domain ID, or you will not see the topics:
 
-### NOTE: when you open a new terminal, you need to source again and set the domain ID, or you will not see the topics:
 - Source the .bashrc file: source ~/robohub/turtlebot4/configs/.bashrc
 - Declare ros2 domain: export ROS_DOMAIN_ID=X (X being the number of your robot)
 
-## Part 3 - Setting up your code (15 marks)
+## Odometry reset
+For this lab, you may want to reset the odometry so that when you start your path, the odometry starts from the (0, 0, 0) state.
+Use this command to reset the odometry on the physical TurtleBot4 (in simulation, by simply restarting the simulation, you can reset the odometry):
 
-In this lab, you will complete the provided code ```motions.py``` to move the robot and collect data. 
-For robot movement, you will be sending motion commands as velocities (twists). This means you will need to publish velocities over the ```/cmd_vel``` topic. 
-For data collection from the IMU, the Lidar (laser scan), and the wheel encoders (odometry), you will be subscribing to ```/imu```, ```/scan```, and ```/odom```, respectively. 
+```
+ros2 service call /reset_pose irobot_create_msgs/srv/ResetPose
 
-- Find ```utilities.py``` and ```motions.py``` in the current branch (labOne), and download them.
-- Open each script, and follow the TODO comments to implement the requirements corresponding to Parts 3 - 5 in this manual. You should replace each ```...``` in the script before you attempt running it.
+```
 
-To setup your code:
-- Import the right types of messages needed (see ```motions.py```); to do so, you will need to check for message type and message components given the topic names and using ros2 commands ```ros2 topic info /topic_name``` and ```ros2 interface show message_type```, respectively, as covered in the tutorials. For online documentation of the messages (you need to select the ROS2 distro you are using)
-  - https://index.ros.org/p/geometry_msgs/
-  - https://index.ros.org/p/sensor_msgs/
-  - https://index.ros.org/p/nav_msgs 
-- Set up the publisher for the robot's motions;
-- Create the QoS profile.
+## Part 3 - Implement the Extended Kalman Filter (EKF) (40 marks)
+For the implementation of the EKF, you will use the following sensor data to localize the robot:
+- IMU;
+- Odometry (as we do not have direct access to wheel encoders on TurtleBot4).
   
-**Define the QoS profile variable based on whether you are using the simulation (Turtlebot 3 Burger) or the real robot (Turtlebot 4).**
+The structure of the code is basically the same as the one from LAB-2, but the localization is based on EKF instead of using raw data. See comment in ```decisions.py```.
 
-**Use "ros2 topic info /odom --verbose" as explained in Tutorial 3.**
+The estimation algorithm is implemented in ```kalman_filter.py``` and is used in ```localization.py```, which is then used by ```decisions.py```.
 
-## Part 4 - Implement the motions (15 marks)
+The algorithm of the EKF implemented in ```kalman_filter.py``` is as follows (note that the notation is a bit different than the lecture slides):
 
-In this part, you need to implement 3 different motions for the robot:
-- Circle;
-- Spiral;
-- Straight line.
+```
+Prediction step:
+x = f(x, u) // This is the motion model function
+P = A*P*A' + Q // note that Q is the covariance matrix of the states
+```
 
-Follow the comments in ```motions.py``` to implement these motions for the robot, there is one function for each of these motions. 
+```
+Update step:
 
-For real robots, you will need to tune your robot's motion parameters to make sure it fits into the classroom space.
+S = C*P*C' + R // note that R is the covariance matrix of the measurements
+K = P*C'*inv(S)
+Y_bar = z - h(x) // h is the measurement function
+x = x + K*Y_bar
+P = (1 - K*C)*P
+```
 
-## Part 5 - Implement the data reading and logging (15 marks)
-To read from the sensors (IMU, Lidar, wheel encoders), you need to:
-- Subscribe to the topics these sensors are publishing data on;
-- Create callback functions to log the data.
+For the estimation, you can use:
+- As state vector ```x = [x,y,th,w,v,vdot]```
+- As measurements, data from odometry and IMU ```z = [v,w,ax,ay]```. 
 
-Follow the comments in the ```motions.py``` and ```utilities.py``` to complete the above functionalities. The loggers that save the data on csv files are already implemented for you.
+Derive the necessary equations and matrices for the process model and measurement model to complete the EKF implementation.
 
-## Part 6 - Execute on the robot and log the data (10 marks)
-If all of the above is completed, you should now be ready to execute the code on the robot. Run each case one by one (circle, spiral, line) to log the data.
-Log sufficient data for post processing and analysis. Make sure that the data is actually logged and saved.
+For this part:
+- Follow the comments in ```kalman_filter.py```to implement the EKF with all necessarily quantities and matrices.
+- Comment the code in ```kalman_filter.py```, explaining what the code does and what is the role of each matrix and function in the code; 
+- Follow the comments in ```localization.py``` to complete the implementation of the EKF for the robots using IMU and odom by deriving all necessary matrices and functions in ```initKalmanfilter``` and complete the steps in ```fusion_callback```.
 
-First drive the robot to a sufficiently large space, then start your motion sequences. You can use undock and the teleop as you did in *Part 2*. Remember to dock your robot at the end of your tests.
+## Part 4 - Test the EKF implementation (20 marks)
+After you've finished the implementation of the EKF, you can proceed with testing your localization:
+- Spiral motion (use this motion to tune your EKF);
+- The point controller;
+If you want, in addition, you can also test with the other trajectories provided (or the ones you implemented in Lab-2 - this is optional).
 
-To run your modifed ```motions.py``` script:
-- Make sure you can still see your robot's topics before attempting to run your script. The critical topics are ```/scan``` and ```/odom```, make sure they are available by running ```ros2 topic echo /topic_name```  If not, re-visit *Part 1*.
-- Open a terminal, go to your modified ```motions.py``` directory and run: ```python3 motion.py --motion line```
+In testing your code, make sure to try different values for the covariance matrices and log the data accordingly. How do they influence the estimation?
 
-Test all motion sequences.
+You can start with Q = 0.5 and R = 0.5 (multiplied by the correct sizes of Identity matrices to create the covariance matrices). Try to increase and decrease the value of Q without modifying R to observe the effect of modifying the state covariance. Then do the same for R, try to increase and then decrease the value of R without modifying Q to see the effect of modifying the measurement covariance. The range for the variations of Q and R should be in the range of decimals and units. 
 
-### Show each motion sequence to one of the TAs.
+Perform at least two variations of Q and two variations of R for only spiral motion to put in your written report (a total of 4 combinations).
+Perform the final tuning with your point controller and put the results in your written report.
 
-## Part 7 - Process your data and visualize them (10 marks)
-By running ```motions.py``` with different motion sequences, ```.csv``` files will be created for each message type subscribed. The files generated by your script can be found in the same directory as ```motions.py```. make sure to save these files in another folder once you finished the execution, to avoid overwriting them and losing data.
+Follow the comments in ```localization.py``` to complete the data logging, the headers are there.
 
-The remaining part of this manual can be done in lab or at home. But it is recommended that you perform some plots to check the quality of the data before leaving the lab. You will not be able to recollect the data at another time if you did not perform this check.
+These data (robot_pose.csv) will be needed for the plots to be reported in the written report. Plot estimates vs measurements. You're free to adapt the plotting script for the required plots.
 
-A simple data visualization script is provided ```filePlotter.py```. You can use/adapt/modify this script or create your own to visualize the data.
-By running the script, you will be able to create plots for the data collected. 
+**Show the results of your EKF for both the spiral and the point to a TA to score half of the marks for this part.**
 
-*Plot the sensor data that you collected for the different movements from Part 6: laser scans, IMU data, and odometry data.*.
-These plots should help you with your discussions at the end of this manual.
 
-- Find ```filePlotter.py``` in the current branch (labOne), and download it.
-- Navigate to its directory, and run: ```python3 filePlotter.py --files imu_content_spiral.csv```
-- Generate plots for the data collected for each motion sequence for IMU and Odom.
-- To visualize orientations, you may leverage on the provided ```euler_from_quaternion``` function to convert the quaternion to the yaw angle (theta).
-- For laserscan, find out how to convert the range matrix into the Cartesian pose data, if you have NaN/Inf in the data, clean that and then plot only one row of the data.
+## Conclusions - Written report (40 marks)
+You can do this part in the lab (time allowing) or at home. **Make sure you have the proper data saved**.
 
-## Part 8 - Map acquisition (10 marks)
-
-ROS 2 provides some packages that allow to perform mapping of the environment. This utilized SLAM (Simultaneous Localization and Mapping) provided by the Nav2 package. 
-This will be very useful for the later labs, it will be especially needed for LAB-3 and LAB-4.
-
-In real world with TurtleBot4:
-
-See also this link for more details in [turtlebot4 manual](https://turtlebot.github.io/turtlebot4-user-manual/tutorials/generate_map.html):
-
-- Open a new terminal, make sure your environment is set up and your topics are available.
-- Undock your robot if docked.
-- Make sure the ```/scan``` and ```/odom``` topics are available by running ```ros2 topic echo /scan``` or ```ros2 topic echo /odom```. Use ```Ctrl+c``` to crash echo process.
-- In a new terminal, run the teleop node to drive the robot. Remember to decrease robot velocity before driving it around to ensure a decent quality of the map acquisition. 
-- Once you are ready to map, launch the slam package by ```ros2 launch turtlebot4_navigation slam.launch.py ```. Keep the terminal running. 
-- In another terminal run RViz: ```ros2 launch turtlebot4_viz view_robot.launch.py```. This will help you to see the map, robot and the scan. Keep the terminal running.
-- Using the teleop node, drive the robot around until you can sufficiently map at least a corner of the room. Bring the RViz window to the front while driving the robot. You should see areas and walls appearing on the map in RViz as the robot gets closer to obstacles/items. Note that the colors of the map reflect the confidence of the robot in thos locations. You should see that as you drive the robot closer to those areas, the confidence increases and the map becomes clearer and the base becomes more opaque.
-- In a new terminal, save the map with ```ros2 run nav2_map_server map_saver_cli -f map```. You should see the map saved in the folder where you are currently located. You should have 2 files, one .pgm, and one .yaml.
-
-You can do next part in the lab (time allowing) or at home. If your VM is slow, go ahead and use the lab PC.
-
-In simulation with TurtleBot3:
-- Follow the instructions in `tbt3Simulation.md` to run the robot in simulation 
-- In second terminal, run the slam: ```ros2 launch slam_toolbox online_sync_launch.py``` this will open RViz and you should see the base of the map.
-- In a third terminal, run the teleop node: ```ros2 run turtlebot3_teleop teleop_keyboard```.
-- Save the map with ```ros2 run nav2_map_server map_saver_cli -f map```. You should see the map saved in the folder where you are currently located. You should have 2 files, one .pgm, and one .yaml.
-
-You do not have to map the entire room, just a sufficient area to see a portion of the map.
-
-**IMPORTANT!! Before you leave, DELETE all of your codes, map files, etc.**
-
-## Conclusions - Written report (15 marks)
-You can do this part in the lab (time allowing) or at home.
-
-Please prepare a written report containing in the front page:
+Please prepare a written report containing on the front page:
 - Names (Family Name, First Name) of all group members;
 - Student ID of all group members;
 - Station number and robot number.
 
-In a maximum of 2 pages (excluding the front page), report the following:
-- The plots you obtained. The plots should have, title, label name for axis, legends, different shapes/colors for each data, and grids.
-- A screenshot of your obtained map.
-- A brief explanation of the obtained plots (can be in the figure captions), and a brief discussion (interpretation, quality, etc) to show your understanding of the sensor information. *Hint*: you may leverage on the course material and the online documentation of the messages to better interpret your data.
+In a maximum of 3 pages (excluding the front page), report the performance of the EKF. This report should contain the following:
+
+* Provide your understanding of the algorithm provided for the EKF and report on your derivations of the matrices, including the process model and measurement model. 
+* Results of the EKF implementation, compare the measured and estimated. Perform this comparison considering different cases of the covariance matrices as specified in Part 4. The plots should have, title, label name for the axis, legends, different shapes/colors for each line, and grids. 
 
 ## Submission
 
 Submit the report and the code on Dropbox (LEARN) in the corresponding folder. Only one submission per group is needed:
 - **Report**: one single pdf;
-- **Code**: make sure to have commented your code! Submit one single zip file with everything (including the csv files obtained from the data log).
+- **Code**: make sure to have commented your code! Submit one single zip file with everything (including the csv files obtained from the data log and the map files).
 
 
 Good luck!
