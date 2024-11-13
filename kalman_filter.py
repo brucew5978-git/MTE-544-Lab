@@ -19,7 +19,7 @@ class kalman_filter:
     def predict(self):
 
         self.A = self.jacobian_A()
-        self.C = ...
+        self.C = self.jacobian_H()
         
         self.motion_model()
         
@@ -42,10 +42,10 @@ class kalman_filter:
     def measurement_model(self):
         x, y, th, w, v, vdot = self.x
         return np.array([
-            ...,# v
-            ...,# w
-            ..., # ax
-            ..., # ay
+            v,
+            w,
+            vdot * np.cos(th),
+            vdot * np.sin(th)
         ])
         
     # TODO Part 3: Impelment the motion model (state-transition matrice)
@@ -85,13 +85,13 @@ class kalman_filter:
     def jacobian_H(self):
         x, y, th, w, v, vdot=self.x
         return np.array([
-            #x, y,th, w, v,vdot
-            [0,0,0  , 0, 1, 0], # v
-            [0,0,0  , 1, 0, 0], # w
-            [0,0,0  , 0, 0, 1], # ax
-            [0,0,0  , ..., ..., 0], # ay
+            #x, y, th, w, v, vdot
+            [0, 0, 0, 0, 1, 0], # v
+            [0, 0, 0, 1, 0, 0], # w
+            [0, 0, -vdot * np.sin(th), 0, 0, np.cos(th)], # ax
+            [0, 0, vdot * np.cos(th), 0, 0, np.sin(th)], # ay
         ])
         
     # TODO Part 3: return the states here    
     def get_states(self):
-        return ...
+        return self.x
