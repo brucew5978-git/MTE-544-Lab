@@ -9,17 +9,16 @@ class kalman_filter:
     
     # TODO Part 3: Initialize the covariances and the states    
     def __init__(self, P,Q,R, x, dt):
-        self.num_elements = 6
-        self.P=...
-        self.Q=...
-        self.R=...
-        self.x=np.zeros((self.num_elements, 1))
-        self.dt = ...
+        self.P=P
+        self.Q=Q
+        self.R=R
+        self.x=x
+        self.dt = dt
         
     # TODO Part 3: Replace the matrices with Jacobians where needed        
     def predict(self):
 
-        self.A = ...
+        self.A = self.jacobian_A()
         self.C = ...
         
         self.motion_model()
@@ -56,8 +55,8 @@ class kalman_filter:
         dt = self.dt
         
         self.x = np.array([
-            x + ... * np.cos(th) * dt,
-            y + ... * np.sin(th) * dt,
+            x + v * np.cos(th) * dt,
+            y + v * np.sin(th) * dt,
             th + w * dt,
             w,
             v  + vdot*dt,
@@ -72,13 +71,13 @@ class kalman_filter:
         dt = self.dt
         
         return np.array([
-            #x, y,               th, w,             v, vdot
-            [1, 0,              ..., 0,          ...,  0],
-            [0, 1,              ..., 0,          ...,  0],
-            [0, 0,                1, dt,           0,  0],
-            [0, 0,                0, 1,            0,  0],
-            [0, 0,                0, 0,            1,  dt],
-            [0, 0,                0, 0,            0,  1 ]
+            #x, y,               th,                    w,  v,                   vdot
+            [1, 0,               -v * np.sin(th) * dt,  0,  np.cos(th) * dt,     0],
+            [0, 1,                v * np.cos(th) * dt,  0,  np.sin(th),          0],
+            [0, 0,                1,                    dt, 0,                   0],
+            [0, 0,                0,                    1,  0,                   0],
+            [0, 0,                0,                    0,  1,                  dt],
+            [0, 0,                0,                    0,  0,                   1]
         ])
     
     
