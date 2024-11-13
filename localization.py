@@ -48,7 +48,7 @@ class localization(Node):
     ):
         super().__init__("localizer")
 
-        elf.loc_logger = Logger(loggerName, loggerHeaders)
+        self.loc_logger = Logger(loggerName, loggerHeaders)
         self.pose = None
 
         if type == rawSensors:
@@ -78,8 +78,8 @@ class localization(Node):
         self.kf = kalman_filter(P, Q, R, x, dt)
 
         # TODO Part 3: Use the odometry and IMU data for the EKF
-        self.odom_sub = message_filters.Subscriber('/odom', odom)
-        self.imu_sub = message_filters.Subscriber('/imu', Imu)
+        self.odom_sub = message_filters.Subscriber('odom', odom)
+        self.imu_sub = message_filters.Subscriber('imu', Imu)
 
         time_syncher = message_filters.ApproximateTimeSynchronizer(
             [self.odom_sub, self.imu_sub], queue_size=10, slop=0.1
@@ -122,7 +122,10 @@ class localization(Node):
         self.pose = np.array([xhat[0, 0], xhat[1, 0], xhat[2, 0], odom_msg.header.stamp])
 
         # TODO Part 4: log your data
-        self.loc_logger.log_values(...)
+
+
+        #                       imu ax, ay, vdot * cos(th),             vdot*sin(th)                v*cos(th)     w,          x,        y
+        self.loc_logger.log_values([ax, ay, xhat[5,0]*np.cos(xhat[2,0]), xhat[5,0]*np.sin(xhat[2,0]), xhat[4,0], xhat[3,0] ,xhat[0,0], xhat[1,0],odom_msg.header.stamp])
 
     def odom_callback(self, pose_msg):
         self.pose = [
@@ -140,6 +143,6 @@ class localization(Node):
 if __name__ == "__main__":
     init()
 
-    LOCALIZER = localization()
+    LOCALIZER = localization(type=kalmanFilter, dt=0.01)
 
     spin(LOCALIZER)
