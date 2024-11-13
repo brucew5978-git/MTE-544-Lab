@@ -67,19 +67,19 @@ class localization(Node):
     def initKalmanfilter(self, dt):
         # TODO Part 3: Set up the quantities for the EKF (hint: you will need the functions for the states and measurements)
 
-        x = ...
+        x = np.zeros((6, 1))
 
-        Q = ...
+        Q = np.eye(6) * 1000 # Initially high process noise covariance (To be tuned)
 
-        R = ...
+        R = np.eye(2) * 1000 # Initially low confidence in measurement values (to be tuned)
 
-        P = ...  # initial covariance
+        P = np.eye(6) * 1000 # High initial covariance
 
         self.kf = kalman_filter(P, Q, R, x, dt)
 
         # TODO Part 3: Use the odometry and IMU data for the EKF
-        self.odom_sub = message_filters.Subscriber(...)
-        self.imu_sub = message_filters.Subscriber(...)
+        self.odom_sub = message_filters.Subscriber('/odom', odom)
+        self.imu_sub = message_filters.Subscriber('/imu', Imu)
 
         time_syncher = message_filters.ApproximateTimeSynchronizer(
             [self.odom_sub, self.imu_sub], queue_size=10, slop=0.1
@@ -92,16 +92,34 @@ class localization(Node):
         # your measurements are the linear velocity and angular velocity from odom msg
         # and linear acceleration in x and y from the imu msg
         # the kalman filter should do a proper integration to provide x,y and filter ax,ay
-        z = ...
+        ax = imu_msg.linear_acceleration.x
+        ay = imu_msg.linear_acceleration.y
+
+        vx = odom_msg.twist.linear.x
+        vy = odom_msg.twist.linear.y
+
+        wz = odom_msg.twist.angular.z
+
+        # Derive v from linear x and y velocities
+        v = np.sqrt(vx**2, vy**2)
+
+        # v, w, vx, vy
+        # Populate the measurement array based on the measurements from the IMU and odometry
+        z = np.array([v, wz, ax, ay])
 
         # Implement the two steps for estimation
-        ...
+        self.kf.predict()
+        self.kf.update(z)
 
         # Get the estimate
         xhat = self.kf.get_states()
 
         # Update the pose estimate to be returned by getPose
-        self.pose = np.array(...)
+        # Order is x, y, theta, header_stamp
+
+        # x, y, and theta are the first three parts of the state derived from the EKF
+        # stamp is derived from... 
+        self.pose = np.array([xhat[0, 0], xhat[1, 0], xhat[2, 0], odom_msg.header.stamp])
 
         # TODO Part 4: log your data
         self.loc_logger.log_values(...)
