@@ -1,35 +1,37 @@
-# LAB 1 - Sensor data processing for mobile robots
+# LAB 4 - Path planning and navigation
 
 ## Introduction
 
-Welcome to LAB 1 of the mobile robotics course! In this lab, participants will gain hands-on experience with mobile robots and acquire knowledge about their basic functionalities. By the end of this lab, 
-### Participants will be able to:
-- Interact with sensors.
-- Understand the pipeline of ros2 or any middleware.
-- Read and Process robot's data; sensors and actuators.
+Welcome to LAB 4 of the mobile robotics course! 
+In this lab, participants will gain experience with implementing a path planner and drive the robot using the obtained plan.
+By the end of this lab, participants will be able to:
+- Use a map to create a graph for graph-based path planner;
+- Generate a plan with the path planner and navigate the robot through the path to specified goals.
+
+*Part 1* and *Part 2* are the same as in the previous labs they are here just for your convenience.
 
 
-### Participants will learn:
+#### The summary of what you should learn is as following:
+You will learn how to:
+- Create a cost map from a pre-aquired map;
+- Generate an optimal path using the A* algorithm;
+- Execute a path on a mobile robot.
 
-1. How to connect to your mobile robot and make it move around. 
-2. How to properly read and log sensors through ros interfaces and OOP programming. 
+**NOTE** this Lab builds on top of Lab 2 and Lab 3. A complete solution to Lab 2 and Lab 3 is provided within this lab so that even if you did not conclude Lab 2 and Lab 3's implementation, you can still work on Lab 4 without penalties. You are welcome to replace some of the code with your own development from Lab 2 and Lab 3.
+
+Check ```rubrics.md``` for the grading scheme of this lab.
 
 ### NOTES for pre-lab activities
 Given the limited time in the lab, it is highly recommended to go through this manual and start (or complete) your implementation before the lab date, by working on your personal setup (VMWare, remote desktop, lent laptop), and using simulation for testing when needed to verify that your codes are working before coming into the lab. For simulation, refer to `tbt3Simulation.md` in the `main` branch.
 
 During the 3 hours in the lab, you want to utilize this time to test your code, work with the actual robot, get feedback from the TAs, and acquire the in-lab marks (check `rubrics.md` in the same branch).
 
-While in-lab, you are required to use the Desktop PCs and **NOT** your personal setup (VMWare, remote desktop, lent laptop). So, make sure that you have your modified files, either online or on a USB, with you to try it out in-lab.
+While in-lab, you are required to use the Desktop PCs and **NOT** your personal setup (VMWare, remote desktop, lent laptop). So, make sure that you have your modified files, either online or on a USB, with you to try it out in-lab. 
 
-### Pre-lab deliverable
-A first version of the completed code is to be submitted **24 hours before the group's lab section** (e.g. groups on the Wednesday section must submit by Tuesday at 3 PM), along with a list of doubts/questions to be solved during the in-person lab section (optional, if needed). The in-person lab is not meant for implementation but for testing and getting help from the TAs. 
+## Part 1 - connecting to the robot (no marks)
+Open the [connectToUWtb4s.md](https://github.com/aalghooneh/MTE544_student/blob/main/connectToUWtb4s.md) markdown file in the main branch, and follow along. Read and follow each step carefully.
 
-Failure to submit will result in a penalty of 5 marks on the lab report. The code does not have to be fully correct, but it should be (at least almost) complete and meaningful with appropriate comments.
-
-## Part 1 - Connect to the robot (5 marks)
-Open the [connectToUWtb4s.md](https://github.com/UW-MTE544/MTE544_student/blob/main/connectToUWtb4s.md) markdown file in the main branch, and follow along. Read and follow each step carefully. Wait for TA approval before going to next step.
-
-## Part 2 - Play with the robot (5 marks)
+## Part 2 - Robot teleop (no marks)
 
 In this part, you will learn to play with the robot; you will get to undock it from the charger and then move it around by keyboard.  
 When you want to dock it again, It should be able to find it only when it is in less than ~0.5 meter around it. Note, that it doesn't
@@ -52,134 +54,102 @@ ros2 run teleop_twist_keyboard teleop_twist_keyboard
 See the prompt for help on the keys. 
 
 To dock the robot, use:
+
 ```
 ros2 action send_goal /dock irobot_create_msgs/action/Dock {}
 ```
 
-### Lead the robot to your seat and let a TA know to get your checkmark for grading!
+## NOTE: when you open a new terminal, you need to source again and set the domain ID, or you will not see the topics:
 
-### NOTE: when you open a new terminal, you need to source again and set the domain ID, or you will not see the topics:
 - Source the .bashrc file: source ~/robohub/turtlebot4/configs/.bashrc
 - Declare ros2 domain: export ROS_DOMAIN_ID=X (X being the number of your robot)
 
-## Part 3 - Setting up your code (15 marks)
+## Part 3 - Map acquisition (5 marks)
+Check the [Excel sheet](https://uofwaterloo.sharepoint.com/:x:/s/tm-class-mte544fall2024-1054674-Teachingteam/ESkYeAUdxhJHq2fysmgquXwBlgaIz9pUFIL9pULrtZdvIQ?e=LP01lp) to see the time slots reserved for your group for mapping and then testing. Two groups will work at the same time due to time limitations. Choose one of the two entrances so that the two robots are each at a different one. Bring the robot to the dock at the entrance chosen, and then start your mapping/testing.
 
-In this lab, you will complete the provided code ```motions.py``` to move the robot and collect data. 
-For robot movement, you will be sending motion commands as velocities (twists). This means you will need to publish velocities over the ```/cmd_vel``` topic. 
-For data collection from the IMU, the Lidar (laser scan), and the wheel encoders (odometry), you will be subscribing to ```/imu```, ```/scan```, and ```/odom```, respectively. 
+You do not have to wait until your slot starts if the earlier slots have finished earlier, just start as soon as the previous groups are done.
 
-- Find ```utilities.py``` and ```motions.py``` in the current branch (labOne), and download them.
-- Open each script, and follow the TODO comments to implement the requirements corresponding to Parts 3 - 5 in this manual. You should replace each ```...``` in the script before you attempt running it.
+**Please try to finish within your allocated time.**
 
-To setup your code:
-- Import the right types of messages needed (see ```motions.py```); to do so, you will need to check for message type and message components given the topic names and using ros2 commands ```ros2 topic info /topic_name``` and ```ros2 interface show message_type```, respectively, as covered in the tutorials. For online documentation of the messages (you need to select the ROS2 distro you are using)
-  - https://index.ros.org/p/geometry_msgs/
-  - https://index.ros.org/p/sensor_msgs/
-  - https://index.ros.org/p/nav_msgs 
-- Set up the publisher for the robot's motions;
-- Create the QoS profile.
-  
-**Define the QoS profile variable based on whether you are using the simulation (Turtlebot 3 Burger) or the real robot (Turtlebot 4).**
+**NOTE: do not move the dock, do not change the positioning of the robots, this is important to be able to use your map later on.**
 
-**Use "ros2 topic info /odom --verbose" as explained in Tutorial 3.**
+Undock the robot, put the robot in the entrance marked for you, and reset the odometry, and then acquire the map as you did in LAB-1 and save it as room for use in the planning.
 
-## Part 4 - Implement the motions (15 marks)
+```
+# terminal 1: reset the odometry pose
+ros2 service call /reset_pose irobot_create_msgs/srv/ResetPose {}
+# terminal 2: run the SLAM
+ros2 launch turtlebot4_navigation slam.launch.py
+# terminal 3: view the results in RViz
+ros2 launch turtlebot4_viz view_robot.launch.py
+# terminal 4: move around the robot
+ros2 run teleop_twist_keyboard teleop_twist_keyboard
+# terminal 5: save the map
+ros2 run nav2_map_server map_saver_cli -f room
+``` 
 
-In this part, you need to implement 3 different motions for the robot:
-- Circle;
-- Spiral;
-- Straight line.
+**Note: if you face "Failed to spin map subscription" error, just rerun the `ros2 run nav2_map_server map_saver_cli -f room`**.
 
-Follow the comments in ```motions.py``` to implement these motions for the robot, there is one function for each of these motions. 
+When the map is acquired, make sure you **don't pick up the robot** so you wouldn't alter the odometry. If by any change you did, put the robot back on the dock, then undock and reset the odometry. This is to avoid for you to map the enviornment again.
 
-For real robots, you will need to tune your robot's motion parameters to make sure it fits into the classroom space.
+**Show the map to a TA to score the marks associated to this part.**
 
-## Part 5 - Implement the data reading and logging (15 marks)
-To read from the sensors (IMU, Lidar, wheel encoders), you need to:
-- Subscribe to the topics these sensors are publishing data on;
-- Create callback functions to log the data.
+## Part 4 - Complete the A* algorithm (25 marks)
+A mostly-completed A* algorithm is provided in ```a_star.py```.
 
-Follow the comments in the ```motions.py``` and ```utilities.py``` to complete the above functionalities. The loggers that save the data on csv files are already implemented for you.
+For this part:
+- Follow the comments to complete the code in ```a_star.py``` to plan the path using the A* algorithm. 
+- Implement two different heuristics: Manhattan distance and Euclidean distance. A policy for switching between these two heuristics is not implemented, you are free to implement this the way you prefer (hard coded or with switching parameter or any other way).
 
-## Part 6 - Execute on the robot and log the data (10 marks)
-If all of the above is completed, you should now be ready to execute the code on the robot. Run each case one by one (circle, spiral, line) to log the data.
-Log sufficient data for post processing and analysis. Make sure that the data is actually logged and saved.
+## Part 5 - Complete the code for testing the path (25 marks + 5 bonus marks)
+To utilize the planner, it is necessary to create a cost map and define a goal pose. Differently from previous planners you have used, in this case the searching algorithm will create a list of poses that the robot has to follow (a path). So some adaptations to the code are necessary.
 
-First drive the robot to a sufficiently large space, then start your motion sequences. You can use undock and the teleop as you did in *Part 2*. Remember to dock your robot at the end of your tests.
+For this part:
+- Complete the code in ```planner.py``` to create the cost map using the ```mapManipulator``` from ```mapUtilities.py```;
+- Complete the code in ```planner.py``` to create a trajectory that is a list of goal poses returned by the searching algorithm which correspond to the path to follow;
+- Complete the code in ```decisions.py``` to adapt the code for the path planner.
+- **Bonus** - In ```decisions.py``` use the PID gains from your Lab2, if you could not finish Lab2 or could not obtain good values, ask a TA (no bonus). Complete the code in ```localization.py``` with the Q, R, and P matrices you obtained in Lab3. If you could not obtain good values or you could not obtain any values, you can use ```rawSensors``` instead of ```kalmanFilter``` for the localizer (no bonus if rawSensors is used).
 
-To run your modifed ```motions.py``` script:
-- Make sure you can still see your robot's topics before attempting to run your script. The critical topics are ```/scan``` and ```/odom```, make sure they are available by running ```ros2 topic echo /topic_name```  If not, re-visit *Part 1*.
-- Open a terminal, go to your modified ```motions.py``` directory and run: ```python3 motion.py --motion line```
+## Part 6 - Test your path planner (20 marks)
+To test the path planner:
+- Choose at least two different goal poses (can be consecutive goal points during the same execution) on your map that are significantly far from each other and perform path planning and navigation for each ot these two goals.
+- Perform the planning for each of these two goal poses with the two heuristics implemented in Part 4 (Manhattan and Euclidean).
 
-Test all motion sequences.
+**For choosing a goal pose:**
+1. Open a terminal and run the mapPublisher.py: ```python3 mapPublisher.py```  
+2. In another terminal run the rviz2 with the given configuration: ```rviz2 -d pathPlanner.rviz```
+3. In another terminal run the decisions.py: ```python3 decisions.py```
+4. On rvzi2 use the 2D goal pose on the toolbar on top to choose the goal pose 
+5. Watch the robot go to the specified point 
 
-### Show each motion sequence to one of the TAs.
+**Note, given that there is limited time and space in the lab, do the necessary for scoring the in-lab marks (see below), and the rest in simulation.**
 
-## Part 7 - Process your data and visualize them (10 marks)
-By running ```motions.py``` with different motion sequences, ```.csv``` files will be created for each message type subscribed. The files generated by your script can be found in the same directory as ```motions.py```. make sure to save these files in another folder once you finished the execution, to avoid overwriting them and losing data.
+**In-lab marks**:
+**Check your allocated time slot for testing. Please try to finish within your allocated time.**
 
-The remaining part of this manual can be done in lab or at home. But it is recommended that you perform some plots to check the quality of the data before leaving the lab. You will not be able to recollect the data at another time if you did not perform this check.
+- **Show the path execution with at least two goal poses and one heuristic to a TA to score 10 marks. Show the TA where are your goal poses within the map on RViz and what is the used heuristics.**
 
-A simple data visualization script is provided ```filePlotter.py```. You can use/adapt/modify this script or create your own to visualize the data.
-By running the script, you will be able to create plots for the data collected. 
 
-*Plot the sensor data that you collected for the different movements from Part 6: laser scans, IMU data, and odometry data.*.
-These plots should help you with your discussions at the end of this manual.
+## Conclusions - Written report (30 marks)
+You can do this part in the lab (time allowing) or at home. **Make sure you have the proper data saved**.
 
-- Find ```filePlotter.py``` in the current branch (labOne), and download it.
-- Navigate to its directory, and run: ```python3 filePlotter.py --files imu_content_spiral.csv```
-- Generate plots for the data collected for each motion sequence for IMU and Odom.
-- To visualize orientations, you may leverage on the provided ```euler_from_quaternion``` function to convert the quaternion to the yaw angle (theta).
-- For laserscan, find out how to convert the range matrix into the Cartesian pose data, if you have NaN/Inf in the data, clean that and then plot only one row of the data.
-
-## Part 8 - Map acquisition (10 marks)
-
-ROS 2 provides some packages that allow to perform mapping of the environment. This utilized SLAM (Simultaneous Localization and Mapping) provided by the Nav2 package. 
-This will be very useful for the later labs, it will be especially needed for LAB-3 and LAB-4.
-
-In real world with TurtleBot4:
-
-See also this link for more details in [turtlebot4 manual](https://turtlebot.github.io/turtlebot4-user-manual/tutorials/generate_map.html):
-
-- Open a new terminal, make sure your environment is set up and your topics are available.
-- Undock your robot if docked.
-- Make sure the ```/scan``` and ```/odom``` topics are available by running ```ros2 topic echo /scan``` or ```ros2 topic echo /odom```. Use ```Ctrl+c``` to crash echo process.
-- In a new terminal, run the teleop node to drive the robot. Remember to decrease robot velocity before driving it around to ensure a decent quality of the map acquisition. 
-- Once you are ready to map, launch the slam package by ```ros2 launch turtlebot4_navigation slam.launch.py ```. Keep the terminal running. 
-- In another terminal run RViz: ```ros2 launch turtlebot4_viz view_robot.launch.py```. This will help you to see the map, robot and the scan. Keep the terminal running.
-- Using the teleop node, drive the robot around until you can sufficiently map at least a corner of the room. Bring the RViz window to the front while driving the robot. You should see areas and walls appearing on the map in RViz as the robot gets closer to obstacles/items. Note that the colors of the map reflect the confidence of the robot in thos locations. You should see that as you drive the robot closer to those areas, the confidence increases and the map becomes clearer and the base becomes more opaque.
-- In a new terminal, save the map with ```ros2 run nav2_map_server map_saver_cli -f map```. You should see the map saved in the folder where you are currently located. You should have 2 files, one .pgm, and one .yaml.
-
-You can do next part in the lab (time allowing) or at home. If your VM is slow, go ahead and use the lab PC.
-
-In simulation with TurtleBot3:
-- Follow the instructions in `tbt3Simulation.md` to run the robot in simulation 
-- In second terminal, run the slam: ```ros2 launch slam_toolbox online_sync_launch.py``` this will open RViz and you should see the base of the map.
-- In a third terminal, run the teleop node: ```ros2 run turtlebot3_teleop teleop_keyboard```.
-- Save the map with ```ros2 run nav2_map_server map_saver_cli -f map```. You should see the map saved in the folder where you are currently located. You should have 2 files, one .pgm, and one .yaml.
-
-You do not have to map the entire room, just a sufficient area to see a portion of the map.
-
-**IMPORTANT!! Before you leave, DELETE all of your codes, map files, etc.**
-
-## Conclusions - Written report (15 marks)
-You can do this part in the lab (time allowing) or at home.
-
-Please prepare a written report containing in the front page:
+Please prepare a written report containing on the front page:
 - Names (Family Name, First Name) of all group members;
 - Student ID of all group members;
 - Station number and robot number.
 
-In a maximum of 2 pages (excluding the front page), report the following:
-- The plots you obtained. The plots should have, title, label name for axis, legends, different shapes/colors for each data, and grids.
-- A screenshot of your obtained map.
-- A brief explanation of the obtained plots (can be in the figure captions), and a brief discussion (interpretation, quality, etc) to show your understanding of the sensor information. *Hint*: you may leverage on the course material and the online documentation of the messages to better interpret your data.
+In a maximum of 3 pages (excluding the front page), report the performance of the path planner. This report should contain the following:
 
+* Describe how you implemented the path planning and navigation for the robot from the planner to the actual motions of the robot, including how the provided code works.
+* Figures illustrating the map, with the trajectories generated for the two goal points overlayed on the map. Make sure to clearly mark the starting and ending locations of the robot.
+* Compare the two different heuristics (Manhattan and Euclidean distances, they can be on the same plot, but use different colors). Discuss the results. Are they different, if yes, why, if not why. Which one is better, and why?
+
+**Note on Due Date: all reports, for all sections, are due Dec. 3rd 11:59PM**
 ## Submission
 
 Submit the report and the code on Dropbox (LEARN) in the corresponding folder. Only one submission per group is needed:
 - **Report**: one single pdf;
-- **Code**: make sure to have commented your code! Submit one single zip file with everything (including the csv files obtained from the data log).
+- **Code**: make sure to have commented your code! Submit one single zip file with everything (including the csv files obtained from the data log and the map files).
 
 
 Good luck!
