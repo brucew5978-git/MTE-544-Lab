@@ -1,6 +1,7 @@
 
 from mapUtilities import *
 from a_star import *
+# Import all functions from both files
 
 POINT_PLANNER=0; TRAJECTORY_PLANNER=1
 
